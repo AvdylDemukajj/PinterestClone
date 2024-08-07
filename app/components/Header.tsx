@@ -1,8 +1,31 @@
-import React from 'react'
+'use client';
+import React, { useEffect } from 'react'
 import Image from 'next/image'
 import { HiSearch, HiBell, HiChat } from "react-icons/hi";
+import { useSession, signIn, signOut } from "next-auth/react"
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import app from './../shared/firebaseConfig';
 
 function Header() {
+  const { data: session } = useSession()
+  const imageUrl = session?.user?.image ?? '/man.png';
+
+  const db = getFirestore(app);
+
+  useEffect(() => {
+    saveUserInfo();
+  }, [session])
+
+  const saveUserInfo = async() =>{
+    if(session?.user){
+        await addDoc(collection(db, "user"), {
+          userName: session.user.name,
+          email: session.user.email,
+          userImage: session.user.image
+        });
+    }
+  }
+
   return (
     <div className='flex gap-3 md:gap-2 items-center p-6 '> 
         <Image src='/logo.png' alt='logo' width={50} height={50} className='hover:bg-gray-300 p-2 rounded-full cursor-pointer'/>
@@ -18,7 +41,12 @@ function Header() {
         </div>
         <HiBell className='text-[40px] text-gray-500'/>
         <HiChat className='text-[40px] text-gray-500'/>
-        <Image src="/man.png" alt='user-image' width={50} height={50} className='hover:bg-gray-300 p-2 rounded-full cursor-pointer' />
+        {
+          session?.user?
+         <Image src={imageUrl} alt='user-image' width={50} height={50} className='hover:bg-gray-300 p-2 rounded-full cursor-pointer' /> 
+          :
+          <button className='font-semibold p-2 rounded-full px-4' onClick={() => signIn()}>LogIn</button>
+        }
     </div>
   )
 }
